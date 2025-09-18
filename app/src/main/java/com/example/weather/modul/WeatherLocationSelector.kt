@@ -17,6 +17,9 @@ import com.example.weather.R
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.background
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
 
 class WeatherLocationSelector : ComponentActivity() {
@@ -51,26 +54,35 @@ fun WeatherLocationSelectorContent() {
                 modifier = Modifier
                     .size(50.dp)
                     .graphicsLayer(
-                     colorFilter = ColorFilter.tint(Color.Black)  // черный цвет
+                        colorFilter = ColorFilter.tint(Color.Black)
                     )
             )
         }
 
-        // Поле для поиска
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 100.dp, start = 16.dp, end = 16.dp)
+                .padding(top = 60.dp, start = 10.dp, end = 10.dp)
         ) {
-            // TextField для поиска с Material Design
+            // Текст "Управление городами"
+            Text(
+                text = "Управление городами",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp
+                ),
+                modifier = Modifier
+                    .padding(bottom = 12.dp) // Отступ снизу. Перекрытия поиска
+            )
+
+            // Поле для поиска
             TextField(
                 value = query,
                 onValueChange = { query = it },
-                // label = { Text("Search") },
                 placeholder = { Text("Enter location...") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
+                    .padding(10.dp),
                 singleLine = true,
                 leadingIcon = {
                     val searchIcon: Painter = painterResource(id = R.drawable.search_icon)
@@ -80,7 +92,7 @@ fun WeatherLocationSelectorContent() {
                         modifier = Modifier
                             .size(24.dp)
                             .graphicsLayer(
-                                colorFilter = ColorFilter.tint(Color.Black)  // черный цвет
+                                colorFilter = ColorFilter.tint(Color.Black)
                             )
                     )
                 },
@@ -94,6 +106,16 @@ fun WeatherLocationSelectorContent() {
                     disabledIndicatorColor = Color.Transparent
                 )
             )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .height(350.dp)
+                .align(Alignment.Center)
+                .background(Color.Gray.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+        ) {
+            // Что-то в карточке
         }
     }
 }
