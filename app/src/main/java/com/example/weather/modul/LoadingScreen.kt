@@ -35,7 +35,7 @@ fun AppEntry() {
                 showLoading = false // переключаемся на основной экран
             }
         } else {
-            MainScreen() // тут твой основной экран
+            WeatherHome() // тут твой основной экран
         }
     }
 }
@@ -105,7 +105,7 @@ fun LoadingScreen(onTimeout: () -> Unit) {
             contentDescription = "Logo",
             modifier = Modifier
                 .align(Alignment.Center)
-                .size(150.dp)
+                .size(120.dp)
         )
 
         Text(
