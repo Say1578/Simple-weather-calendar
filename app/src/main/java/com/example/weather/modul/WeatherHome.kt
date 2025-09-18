@@ -52,8 +52,9 @@ fun WeatherHome() {
     var weatherResponse by remember { mutableStateOf<WeatherResponse?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var trigger by remember { mutableStateOf(0) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(trigger) {
         try {
             isLoading = true
             weatherResponse = WeatherApi().getForecastWeather("Zaporizhzhya")
@@ -79,12 +80,9 @@ fun WeatherHome() {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
             }
             errorMessage != null -> {
-                Text(
-                    text = errorMessage!!,
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.align(Alignment.Center).padding(32.dp)
+                ErrorScreen(
+                    errorMessage = errorMessage!!,
+                    onRetry = { trigger++ }
                 )
             }
             weatherResponse != null -> {
@@ -96,6 +94,50 @@ fun WeatherHome() {
             onAddClick = { context.startActivity(Intent(context, WeatherLocationSelector::class.java)) },
             onSettingsClick = { context.startActivity(Intent(context, AppSettings::class.java)) }
         )
+    }
+}
+
+@Composable
+fun ErrorScreen(errorMessage: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "😔",
+            fontSize = 64.sp
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Не удалось загрузить данные",
+            color = Color.White,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = errorMessage,
+            color = Color.White.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+        Card(
+            modifier = Modifier.clickable(onClick = onRetry),
+            shape = RoundedCornerShape(50.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Text(
+                text = "Повторить",
+                color = Color.DarkGray,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 32.dp, vertical = 12.dp)
+            )
+        }
     }
 }
 
