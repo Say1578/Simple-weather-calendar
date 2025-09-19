@@ -1,14 +1,16 @@
 package com.example.weather.modul.home
 
 import android.content.Intent
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -28,6 +30,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.weather.modul.AppSettings
 import com.example.weather.modul.WeatherLocationSelector
 import com.example.weather.modul.WeatherResponse
+import com.example.weather.modul.home.WeatherHomeViewModel
+import com.example.weather.modul.home.WeatherUiState
 import com.example.weather.modul.home.components.CurrentWeatherSection
 import com.example.weather.modul.home.components.DailyForecastCard
 import com.example.weather.modul.home.components.DetailsGrid
@@ -37,16 +41,18 @@ import com.example.weather.modul.home.components.TopBar
 import com.example.weather.modul.home.utils.WeatherType
 import com.example.weather.modul.home.utils.createBackgroundBrush
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WeatherHome(viewModel: WeatherHomeViewModel = viewModel()) {
     val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsState()
+    val uiStates by viewModel.uiStates.collectAsState()
+    val savedCities by viewModel.savedCities.collectAsState()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refreshSelectedCityAndLoadWeather()
+                viewModel.loadWeatherForSavedCities()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -55,9 +61,18 @@ fun WeatherHome(viewModel: WeatherHomeViewModel = viewModel()) {
         }
     }
 
-    val backgroundBrush = when (val state = uiState) {
-        is WeatherUiState.Success -> createBackgroundBrush(WeatherType.fromWeatherCode(state.weather.current.condition.code))
-        else -> Brush.verticalGradient(colors = listOf(Color(0xFF3a6073), Color(0xFF16222A)))
+    val pagerState = rememberPagerState(pageCount = { savedCities.size })
+
+    val backgroundBrush = if (pagerState.currentPage < savedCities.size) {
+        val currentCity = savedCities[pagerState.currentPage]
+        val state = uiStates[currentCity]
+        if (state is WeatherUiState.Success) {
+            createBackgroundBrush(WeatherType.fromWeatherCode(state.weather.current.condition.code))
+        } else {
+            Brush.verticalGradient(colors = listOf(Color(0xFF3a6073), Color(0xFF16222A)))
+        }
+    } else {
+        Brush.verticalGradient(colors = listOf(Color(0xFF3a6073), Color(0xFF16222A)))
     }
 
     Box(
@@ -65,25 +80,55 @@ fun WeatherHome(viewModel: WeatherHomeViewModel = viewModel()) {
             .fillMaxSize()
             .background(backgroundBrush)
     ) {
-        when (val state = uiState) {
-            is WeatherUiState.Loading -> {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color.White)
+        if (savedCities.isNotEmpty()) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                val city = savedCities[page]
+                val state = uiStates[city]
+                when (state) {
+                    is WeatherUiState.Loading -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color.White)
+                        }
+                    }
+
+                    is WeatherUiState.Error -> {
+                        ErrorScreen(
+                            errorMessage = state.message,
+                            isCitySelectionError = state.isCitySelectionError,
+                            onRetry = {
+                                if (state.isCitySelectionError) {
+                                    context.startActivity(Intent(context, WeatherLocationSelector::class.java))
+                                } else {
+                                    viewModel.retry(city)
+                                }
+                            }
+                        )
+                    }
+
+                    is WeatherUiState.Success -> {
+                        WeatherContent(state.weather)
+                    }
+
+                    else -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color.White)
+                        }
+                    }
+                }
             }
-            is WeatherUiState.Error -> {
+        } else {
+            val state = uiStates["empty"]
+            if (state is WeatherUiState.Error) {
                 ErrorScreen(
                     errorMessage = state.message,
                     isCitySelectionError = state.isCitySelectionError,
                     onRetry = {
-                        if (state.isCitySelectionError) {
-                            context.startActivity(Intent(context, WeatherLocationSelector::class.java))
-                        } else {
-                            viewModel.retry()
-                        }
+                        context.startActivity(Intent(context, WeatherLocationSelector::class.java))
                     }
                 )
-            }
-            is WeatherUiState.Success -> {
-                WeatherContent(state.weather)
             }
         }
 

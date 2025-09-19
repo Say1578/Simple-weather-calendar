@@ -54,7 +54,9 @@ class CitySearchViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             _isSearching.value = true
             try {
-                _searchResults.value = weatherApi.searchCity(query)
+                _searchResults.value = weatherApi.searchCity(query).filter {
+                    !it.name.contains("airport", ignoreCase = true) && it.region.isNotEmpty()
+                }
             } catch (e: Exception) {
                 _searchResults.value = emptyList()
             } finally {
@@ -65,14 +67,31 @@ class CitySearchViewModel(application: Application) : AndroidViewModel(applicati
 
     fun addCity(city: SearchResultLocation) {
         CityStorage.addCity(context, city.name)
-        loadSavedCitiesWeather()
+        val newCityName = city.name
+        viewModelScope.launch {
+            val currentCities = _savedCitiesWeather.value.toMutableList()
+            currentCities.add(0, SavedCityWeather(newCityName, null))
+            _savedCitiesWeather.value = currentCities
+
+            try {
+                val weather = WeatherRepository.getForecastWeather(newCityName, 1)
+                val index = _savedCitiesWeather.value.indexOfFirst { it.name == newCityName }
+                if (index != -1) {
+                    _savedCitiesWeather.value = _savedCitiesWeather.value.toMutableList().also {
+                        it[index] = SavedCityWeather(newCityName, weather)
+                    }
+                }
+            } catch (e: Exception) {
+                // error
+            }
+        }
         _searchQuery.value = ""
         _searchResults.value = emptyList()
     }
 
     fun removeCity(cityName: String) {
         CityStorage.removeCity(context, cityName)
-        loadSavedCitiesWeather()
+        _savedCitiesWeather.value = _savedCitiesWeather.value.filter { it.name != cityName }
     }
 
     fun selectCity(cityName: String) {
@@ -82,20 +101,16 @@ class CitySearchViewModel(application: Application) : AndroidViewModel(applicati
     fun loadSavedCitiesWeather() {
         viewModelScope.launch {
             val savedCities = CityStorage.getSavedCities(context)
-            _savedCitiesWeather.value = savedCities.map { cityName ->
-                SavedCityWeather(cityName, null)
-            }
-
-            savedCities.forEachIndexed { index, cityName ->
+            val citiesWeather = mutableListOf<SavedCityWeather>()
+            savedCities.forEach { cityName ->
                 try {
-                    val weather = weatherApi.getForecastWeather(cityName, 1)
-                    _savedCitiesWeather.value = _savedCitiesWeather.value.toMutableList().also {
-                        it[index] = SavedCityWeather(cityName, weather)
-                    }
+                    val weather = WeatherRepository.getForecastWeather(cityName, 1)
+                    citiesWeather.add(SavedCityWeather(cityName, weather))
                 } catch (e: Exception) {
-
+                    // error
                 }
             }
+            _savedCitiesWeather.value = citiesWeather
         }
     }
 }

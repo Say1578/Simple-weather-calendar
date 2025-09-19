@@ -19,37 +19,58 @@ sealed interface WeatherUiState {
 
 class WeatherHomeViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _uiState = MutableStateFlow<WeatherUiState>(WeatherUiState.Loading)
-    val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
+    private val _uiStates = MutableStateFlow<Map<String, WeatherUiState>>(emptyMap())
+    val uiStates: StateFlow<Map<String, WeatherUiState>> = _uiStates.asStateFlow()
 
-    private var selectedCity: String? = null
+    private val _savedCities = MutableStateFlow<List<String>>(emptyList())
+    val savedCities: StateFlow<List<String>> = _savedCities.asStateFlow()
 
     init {
-        refreshSelectedCityAndLoadWeather()
+        loadWeatherForSavedCities()
     }
 
-    fun refreshSelectedCityAndLoadWeather() {
-        selectedCity = CityStorage.getSelectedCity(getApplication())
-        loadWeatherData()
-    }
-
-    fun retry() {
-        loadWeatherData()
-    }
-
-    private fun loadWeatherData() {
+    fun loadWeatherForSavedCities() {
         viewModelScope.launch {
-            _uiState.value = WeatherUiState.Loading
-            val city = selectedCity
-            if (city != null) {
-                try {
-                    val weather = WeatherRepository.getForecastWeather(city)
-                    _uiState.value = WeatherUiState.Success(weather)
-                } catch (e: Exception) {
-                    _uiState.value = WeatherUiState.Error("Ошибка загрузки: ${e.message}", isCitySelectionError = false)
-                }
+            val cities = CityStorage.getSavedCities(getApplication())
+            _savedCities.value = cities
+            if (cities.isEmpty()) {
+                _uiStates.value = mapOf("empty" to WeatherUiState.Error("Пожалуйста, добавьте город, чтобы увидеть погоду.", isCitySelectionError = true))
             } else {
-                _uiState.value = WeatherUiState.Error("Пожалуйста, добавьте город, чтобы увидеть погоду.", isCitySelectionError = true)
+                cities.forEach { city ->
+                    _uiStates.value = _uiStates.value.toMutableMap().apply {
+                        put(city, WeatherUiState.Loading)
+                    }
+                    launch {
+                        try {
+                            val weather = WeatherRepository.getForecastWeather(city)
+                            _uiStates.value = _uiStates.value.toMutableMap().apply {
+                                put(city, WeatherUiState.Success(weather))
+                            }
+                        } catch (e: Exception) {
+                            _uiStates.value = _uiStates.value.toMutableMap().apply {
+                                put(city, WeatherUiState.Error("Ошибка загрузки: ${e.message}", isCitySelectionError = false))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun retry(city: String) {
+        viewModelScope.launch {
+            _uiStates.value = _uiStates.value.toMutableMap().apply {
+                put(city, WeatherUiState.Loading)
+            }
+            try {
+                val weather = WeatherRepository.getForecastWeather(city)
+                _uiStates.value = _uiStates.value.toMutableMap().apply {
+                    put(city, WeatherUiState.Success(weather))
+                }
+            } catch (e: Exception) {
+                _uiStates.value = _uiStates.value.toMutableMap().apply {
+                    put(city, WeatherUiState.Error("Ошибка загрузки: ${e.message}", isCitySelectionError = false))
+                }
             }
         }
     }
