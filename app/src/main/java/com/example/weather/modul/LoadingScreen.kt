@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weather.R
+import com.example.weather.modul.home.WeatherHome
 import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.cos
