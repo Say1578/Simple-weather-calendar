@@ -71,3 +71,14 @@ data class HourData(
     @SerialName("temp_c") val tempC: Double,
     val condition: ConditionData
 )
+
+@Serializable
+data class SearchResultLocation(
+    val id: Int,
+    val name: String,
+    val region: String,
+    val country: String,
+    val lat: Double,
+    val lon: Double,
+    val url: String
+)

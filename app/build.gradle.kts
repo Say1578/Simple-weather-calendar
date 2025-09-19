@@ -83,6 +83,7 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.10")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
 
     // Search
     implementation("com.google.android.material:material:1.12.0")

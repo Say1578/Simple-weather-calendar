@@ -16,6 +16,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,19 +33,22 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
 import com.example.weather.R
 import com.example.weather.api.WeatherApi
 import java.text.SimpleDateFormat
-import java.util.*
-import kotlin.math.cos
+import java.util.Calendar
+import java.util.Locale
 import kotlin.math.roundToInt
-import kotlin.math.sin
 
 @Composable
 fun WeatherHome() {
@@ -52,17 +56,36 @@ fun WeatherHome() {
     var weatherResponse by remember { mutableStateOf<WeatherResponse?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var trigger by remember { mutableStateOf(0) }
+    var selectedCity by remember { mutableStateOf(CityStorage.getSelectedCity(context)) }
 
-    LaunchedEffect(trigger) {
-        try {
-            isLoading = true
-            weatherResponse = WeatherApi().getForecastWeather("Zaporizhzhya")
-        } catch (e: Exception) {
-            errorMessage = "Ошибка загрузки: ${e.message}"
-            e.printStackTrace()
-        } finally {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                selectedCity = CityStorage.getSelectedCity(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    LaunchedEffect(selectedCity) {
+        if (selectedCity != null) {
+            try {
+                isLoading = true
+                errorMessage = null
+                weatherResponse = WeatherApi().getForecastWeather(selectedCity!!)
+            } catch (e: Exception) {
+                errorMessage = "Ошибка загрузки: ${e.message}"
+                e.printStackTrace()
+            } finally {
+                isLoading = false
+            }
+        } else {
             isLoading = false
+            errorMessage = "Пожалуйста, добавьте город, чтобы увидеть погоду."
         }
     }
 
@@ -82,7 +105,17 @@ fun WeatherHome() {
             errorMessage != null -> {
                 ErrorScreen(
                     errorMessage = errorMessage!!,
-                    onRetry = { trigger++ }
+                    isCitySelectionError = selectedCity == null,
+                    onRetry = {
+                        if (selectedCity == null) {
+                            context.startActivity(Intent(context, WeatherLocationSelector::class.java))
+                        } else {
+
+                            val currentCity = selectedCity
+                            selectedCity = null
+                            selectedCity = currentCity
+                        }
+                    }
                 )
             }
             weatherResponse != null -> {
@@ -98,7 +131,7 @@ fun WeatherHome() {
 }
 
 @Composable
-fun ErrorScreen(errorMessage: String, onRetry: () -> Unit) {
+fun ErrorScreen(errorMessage: String, isCitySelectionError: Boolean, onRetry: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -107,12 +140,12 @@ fun ErrorScreen(errorMessage: String, onRetry: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "😔",
+            text = if (isCitySelectionError) "📍" else "😔",
             fontSize = 64.sp
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Не удалось загрузить данные",
+            text = if (isCitySelectionError) "Город не выбран" else "Не удалось загрузить данные",
             color = Color.White,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
@@ -132,7 +165,7 @@ fun ErrorScreen(errorMessage: String, onRetry: () -> Unit) {
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
             Text(
-                text = "Повторить",
+                text = if (isCitySelectionError) "Выбрать город" else "Повторить",
                 color = Color.DarkGray,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 32.dp, vertical = 12.dp)
