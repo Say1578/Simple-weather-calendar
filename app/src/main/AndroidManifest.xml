@@ -31,6 +31,10 @@
         <activity
             android:name=".modul.AppSettings"
             android:theme="@style/Theme.Weather" />
+
+        <activity
+            android:name=".modul.FiveDayForecastActivity"
+            android:theme="@style/Theme.Weather" />
     </application>
 
 </manifest>

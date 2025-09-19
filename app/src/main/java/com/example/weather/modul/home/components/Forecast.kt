@@ -1,16 +1,20 @@
 package com.example.weather.modul.home.components
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,15 +22,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.weather.modul.FiveDayForecastActivity
 import com.example.weather.modul.ForecastDay
 import com.example.weather.modul.HourData
 import com.example.weather.modul.home.components.CardBase
 import com.example.weather.modul.home.utils.formatDayOfWeek
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -34,13 +42,27 @@ import kotlin.math.roundToInt
 
 @Composable
 fun DailyForecastCard(forecastDays: List<ForecastDay>) {
+    val context = LocalContext.current
     CardBase(title = "Прогноз на ${forecastDays.size} дней") {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-            forecastDays.forEachIndexed { index, forecastDay ->
+            forecastDays.take(3).forEachIndexed { index, forecastDay ->
                 DailyForecastItem(forecastDay)
-                if (index < forecastDays.size - 1) {
+                if (index < forecastDays.take(3).size - 1) {
                     Divider(color = Color.White.copy(alpha = 0.2f), thickness = 0.5.dp)
                 }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = {
+                    val intent = Intent(context, FiveDayForecastActivity::class.java).apply {
+                        putExtra("forecast", Json.encodeToString(forecastDays))
+                    }
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f))
+            ) {
+                Text(text = "Прогноз на 5 дней", color = Color.White)
             }
         }
     }
