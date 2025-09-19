@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -91,7 +92,7 @@ fun FiveDayForecastScreen(forecastDays: List<ForecastDay>) {
                     Column(modifier = Modifier.padding(vertical = 8.dp)) {
                         DailyForecastItem(day = day)
                         LazyRow(
-                            modifier = Modifier.height(120.dp),
+                            modifier = Modifier.wrapContentHeight(),
                             contentPadding = PaddingValues(top = 16.dp, bottom = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
