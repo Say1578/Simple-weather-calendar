@@ -27,11 +27,13 @@ import androidx.compose.ui.unit.sp
 import com.example.weather.R
 
 @Composable
-fun TopBar(onAddClick: () -> Unit, onSettingsClick: () -> Unit) {
+fun TopBar(
+    modifier: Modifier = Modifier,
+    onAddClick: () -> Unit, 
+    onSettingsClick: () -> Unit
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 40.dp, start = 16.dp, end = 16.dp),
+        modifier = modifier,
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

@@ -4,14 +4,23 @@ import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -22,6 +31,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -37,11 +47,12 @@ import com.example.weather.modul.home.components.DailyForecastCard
 import com.example.weather.modul.home.components.DetailsGrid
 import com.example.weather.modul.home.components.ErrorScreen
 import com.example.weather.modul.home.components.HourlyForecastCard
+import com.example.weather.modul.home.components.PagerIndicator
 import com.example.weather.modul.home.components.TopBar
 import com.example.weather.modul.home.utils.WeatherType
 import com.example.weather.modul.home.utils.createBackgroundBrush
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun WeatherHome(viewModel: WeatherHomeViewModel = viewModel()) {
     val context = LocalContext.current
@@ -75,67 +86,88 @@ fun WeatherHome(viewModel: WeatherHomeViewModel = viewModel()) {
         Brush.verticalGradient(colors = listOf(Color(0xFF3a6073), Color(0xFF16222A)))
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(backgroundBrush)
-    ) {
-        if (savedCities.isNotEmpty()) {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize()
-            ) { page ->
-                val city = savedCities[page]
-                val state = uiStates[city]
-                when (state) {
-                    is WeatherUiState.Loading -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Color.White)
-                        }
-                    }
-
-                    is WeatherUiState.Error -> {
-                        ErrorScreen(
-                            errorMessage = state.message,
-                            isCitySelectionError = state.isCitySelectionError,
-                            onRetry = {
-                                if (state.isCitySelectionError) {
-                                    context.startActivity(Intent(context, WeatherLocationSelector::class.java))
-                                } else {
-                                    viewModel.retry(city)
-                                }
+    Scaffold(
+        topBar = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                TopBar(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 40.dp, start = 16.dp, end = 16.dp),
+                    onAddClick = { context.startActivity(Intent(context, WeatherLocationSelector::class.java)) },
+                    onSettingsClick = { context.startActivity(Intent(context, AppSettings::class.java)) }
+                )
+                if (pagerState.pageCount > 1) {
+                    PagerIndicator(
+                        currentPage = pagerState.currentPage,
+                        pageCount = pagerState.pageCount,
+                        modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                    )
+                }
+            }
+        },
+        containerColor = Color.Transparent,
+        modifier = Modifier.background(backgroundBrush)
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            if (savedCities.isNotEmpty()) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize()
+                ) { page ->
+                    val city = savedCities[page]
+                    val state = uiStates[city]
+                    when (state) {
+                        is WeatherUiState.Loading -> {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = Color.White)
                             }
-                        )
-                    }
+                        }
 
-                    is WeatherUiState.Success -> {
-                        WeatherContent(state.weather)
-                    }
+                        is WeatherUiState.Error -> {
+                            ErrorScreen(
+                                errorMessage = state.message,
+                                isCitySelectionError = state.isCitySelectionError,
+                                onRetry = {
+                                    if (state.isCitySelectionError) {
+                                        context.startActivity(Intent(context, WeatherLocationSelector::class.java))
+                                    } else {
+                                        viewModel.retry(city)
+                                    }
+                                }
+                            )
+                        }
 
-                    else -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Color.White)
+                        is WeatherUiState.Success -> {
+                            WeatherContent(state.weather)
+                        }
+
+                        else -> {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = Color.White)
+                            }
                         }
                     }
                 }
-            }
-        } else {
-            val state = uiStates["empty"]
-            if (state is WeatherUiState.Error) {
-                ErrorScreen(
-                    errorMessage = state.message,
-                    isCitySelectionError = state.isCitySelectionError,
-                    onRetry = {
-                        context.startActivity(Intent(context, WeatherLocationSelector::class.java))
-                    }
-                )
+            } else {
+                val state = uiStates["empty"]
+                if (state is WeatherUiState.Error) {
+                    ErrorScreen(
+                        errorMessage = state.message,
+                        isCitySelectionError = state.isCitySelectionError,
+                        onRetry = {
+                            context.startActivity(Intent(context, WeatherLocationSelector::class.java))
+                        }
+                    )
+                }
             }
         }
-
-        TopBar(
-            onAddClick = { context.startActivity(Intent(context, WeatherLocationSelector::class.java)) },
-            onSettingsClick = { context.startActivity(Intent(context, AppSettings::class.java)) }
-        )
     }
 }
 
@@ -147,7 +179,7 @@ fun WeatherContent(data: WeatherResponse) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        contentPadding = PaddingValues(top = 80.dp, bottom = 16.dp, start = 16.dp, end = 16.dp)
+        contentPadding = PaddingValues(bottom = 16.dp, start = 16.dp, end = 16.dp)
     ) {
         item {
             Box(
