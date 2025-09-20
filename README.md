@@ -22,9 +22,9 @@ To build and run the project, you will need to:
 
 1.  **Create a `local.properties` file** in the root of the project.
 2.  **Add your WeatherAPI key** to the `local.properties` file:
-    ```
-    WEATHER_API_KEY="YOUR_API_KEY"
-    ```
+```
+WEATHER_API_KEY="YOUR_API_KEY"
+```
 3.  **Build and run the app** using Android Studio.
 
 # API
