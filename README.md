@@ -16,6 +16,17 @@ With this app, you can:
 - Add cities to your favorites for quick access to forecasts.
 - Customize the app to suit your preferences.
 
-## Technologies Used
+# Building and Running
+
+To build and run the project, you will need to:
+
+1.  **Create a `local.properties` file** in the root of the project.
+2.  **Add your WeatherAPI key** to the `local.properties` file:
+    ```
+    WEATHER_API_KEY="YOUR_API_KEY"
+    ```
+3.  **Build and run the app** using Android Studio.
+
+# API
 
 This application utilizes external resources for weather tracking, specifically an API from the [WeatherAPI](https://www.weatherapi.com/).
