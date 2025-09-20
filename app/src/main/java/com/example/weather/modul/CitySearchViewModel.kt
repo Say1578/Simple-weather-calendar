@@ -31,6 +31,9 @@ class CitySearchViewModel(application: Application) : AndroidViewModel(applicati
     private val _isSearching = MutableStateFlow(false)
     val isSearching: StateFlow<Boolean> = _isSearching
 
+    private val _primaryResultForecast = MutableStateFlow<WeatherResponse?>(null)
+    val primaryResultForecast: StateFlow<WeatherResponse?> = _primaryResultForecast
+
     private var searchJob: Job? = null
 
     init {
@@ -47,20 +50,36 @@ class CitySearchViewModel(application: Application) : AndroidViewModel(applicati
             }
         } else {
             _searchResults.value = emptyList()
+            _primaryResultForecast.value = null
         }
     }
 
     private fun searchCities(query: String) {
         viewModelScope.launch {
             _isSearching.value = true
+            _primaryResultForecast.value = null
             try {
-                _searchResults.value = weatherApi.searchCity(query).filter {
+                val results = weatherApi.searchCity(query).filter {
                     !it.name.contains("airport", ignoreCase = true) && it.region.isNotEmpty()
+                }
+                _searchResults.value = results
+                if (results.isNotEmpty()) {
+                    fetchForecastForTopResult(results.first())
                 }
             } catch (e: Exception) {
                 _searchResults.value = emptyList()
             } finally {
                 _isSearching.value = false
+            }
+        }
+    }
+
+    private fun fetchForecastForTopResult(city: SearchResultLocation) {
+        viewModelScope.launch {
+            try {
+                _primaryResultForecast.value = WeatherRepository.getForecastWeather(city.name, 5)
+            } catch (e: Exception) {
+                _primaryResultForecast.value = null
             }
         }
     }

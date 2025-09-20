@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,7 +26,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.weather.R
+import com.example.weather.modul.shared.ForecastPreview
+import kotlin.math.roundToInt
 
 class WeatherLocationSelector : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -145,6 +150,7 @@ fun WeatherLocationSelectorScreen(
             }
 
             if (searchQuery.isNotEmpty()) {
+                val savedCityNames = savedCitiesWeather.map { it.name }
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -152,10 +158,22 @@ fun WeatherLocationSelectorScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                 ) {
                     if (searchResults.isNotEmpty()) {
-                        items(searchResults) { location ->
-                            SearchResultItem(location = location) {
-                                viewModel.addCity(location)
-                            }
+                        items(searchResults.size) { index ->
+                            val location = searchResults[index]
+                            val isAdded = savedCityNames.contains(location.name)
+                            val isPrimary = index == 0
+                            val forecast = if (isPrimary) viewModel.primaryResultForecast.collectAsState().value else null
+
+                            SearchResultItem(
+                                location = location,
+                                isAdded = isAdded,
+                                forecast = forecast,
+                                onClick = { 
+                                    if (!isAdded) {
+                                        viewModel.addCity(location) 
+                                    }
+                                }
+                            )
                         }
                     } else if (!isSearching) {
                         item {
@@ -173,7 +191,7 @@ fun WeatherLocationSelectorScreen(
 }
 
 @Composable
-fun SearchResultItem(location: SearchResultLocation, onClick: () -> Unit) {
+fun SearchResultItem(location: SearchResultLocation, isAdded: Boolean, forecast: WeatherResponse?, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -182,10 +200,33 @@ fun SearchResultItem(location: SearchResultLocation, onClick: () -> Unit) {
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.1f))
     ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column {
-                Text(location.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
-                Text("${location.region}, ${location.country}", fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f))
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(location.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                    Text("${location.region}, ${location.country}", fontSize = 14.sp, color = Color.White.copy(alpha = 0.8f))
+                }
+                if (isAdded) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Добавлено", color = Color.White)
+                        Icon(
+                            Icons.Filled.KeyboardArrowRight,
+                            contentDescription = "View weather",
+                            tint = Color.White
+                        )
+                    }
+                } else {
+                    IconButton(onClick = onClick) {
+                        Icon(
+                            painterResource(id = R.drawable.add_icon),
+                            contentDescription = "Add city",
+                            tint = Color.White
+                        )
+                    }
+                }
+            }
+            if (forecast != null) {
+                ForecastPreview(forecast = forecast, textColor = Color.White)
             }
         }
     }
