@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.CircularProgressIndicator
@@ -25,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -73,6 +76,7 @@ fun WeatherHome(viewModel: WeatherHomeViewModel = viewModel()) {
     }
 
     val pagerState = rememberPagerState(pageCount = { savedCities.size })
+    val sharedScrollState = rememberLazyListState()
 
     val backgroundBrush = if (pagerState.currentPage < savedCities.size) {
         val currentCity = savedCities[pagerState.currentPage]
@@ -145,7 +149,7 @@ fun WeatherHome(viewModel: WeatherHomeViewModel = viewModel()) {
                         }
 
                         is WeatherUiState.Success -> {
-                            WeatherContent(state.weather)
+                            WeatherContent(state.weather, sharedScrollState)
                         }
 
                         else -> {
@@ -172,11 +176,12 @@ fun WeatherHome(viewModel: WeatherHomeViewModel = viewModel()) {
 }
 
 @Composable
-fun WeatherContent(data: WeatherResponse) {
+fun WeatherContent(data: WeatherResponse, scrollState: LazyListState) {
     val todayForecast = data.forecast.forecastDay.first()
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
     LazyColumn(
+        state = scrollState,
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         contentPadding = PaddingValues(bottom = 16.dp, start = 16.dp, end = 16.dp)
