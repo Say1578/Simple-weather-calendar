@@ -16,7 +16,8 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.Weather">
+            android:theme="@style/Theme.Weather"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -26,15 +27,18 @@
         <!-- Добавленные активности без label -->
         <activity
             android:name=".modul.WeatherLocationSelector"
-            android:theme="@style/Theme.Weather" />
+            android:theme="@style/Theme.Weather"
+            android:screenOrientation="portrait" />
 
         <activity
             android:name=".modul.AppSettings"
-            android:theme="@style/Theme.Weather" />
+            android:theme="@style/Theme.Weather"
+            android:screenOrientation="portrait" />
 
         <activity
             android:name=".modul.FiveDayForecastActivity"
-            android:theme="@style/Theme.Weather" />
+            android:theme="@style/Theme.Weather"
+            android:screenOrientation="portrait" />
     </application>
 
 </manifest>
